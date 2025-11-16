@@ -1,4 +1,4 @@
-(function() {
+f(function() {
     const t = document.createElement("link").relList;
     if (t && t.supports && t.supports("modulepreload"))
         return;
@@ -11691,7 +11691,7 @@ function Ah() {
                     to: "/",
                     className: "flex items-center",
                     children: s.jsx("img", {
-                        src: "/logo3-1536x478.png",
+                        src: "/images/logo3-1536x478.png",
                         alt: "LanWave",
                         className: "h-12"
                     })
@@ -12353,7 +12353,7 @@ function Gh() {
                     children: s.jsxs("div", {
                         className: "flex items-center gap-2 sm:gap-3",
                         children: [s.jsx("img", {
-                            src: "/pencil-white.png",
+                            src: "/images/pencil-white.png",
                             alt: "diPencil",
                             className: "h-6 sm:h-8 w-auto object-contain"
                         }), s.jsxs("div", {
