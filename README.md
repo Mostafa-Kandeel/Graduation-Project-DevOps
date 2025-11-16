@@ -4,7 +4,7 @@ A modern and responsive web application for **LanWave IT Consulting – Egypt**,
 This website is built as a **Single Page Application (SPA)** using React, offering smooth navigation and a clean professional UI.
 
 🔗 **Live Preview:** https://lanwave-it-consultin-ogy3.bolt.host/
-![LanWave Website Screenshot](./screenshot.png)
+![LanWave Website Screenshot](https://github.com/Mostafa-Kandeel/Graduation-Project-DevOps/blob/main/Frondend/images/home-page.png)
 
 ---
 
