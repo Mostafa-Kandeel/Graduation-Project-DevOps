@@ -10829,7 +10829,7 @@ const jh = {
         "footer.services": "Services",
         "footer.connect": "Connect With Us",
         "footer.social": "Follow us on social media for updates and insights.",
-        "footer.rights": "© 2025 LanWave. All rights reserved.",
+        "footer.rights": "© 2025 Mostafa KAndeel. All rights reserved.",
         "footer.privacy": "Privacy Policy",
         "footer.terms": "Terms of Service",
         "service.keyFeatures": "Key Features",
@@ -10869,16 +10869,16 @@ const jh = {
         "aboutPage.values.excellence.desc": "We maintain the highest standards in everything we do, from service delivery to customer support.",
         "aboutPage.team.title": "Leadership Team",
         "aboutPage.team.subtitle": "Meet the experts behind our success.",
-        "aboutPage.team.ceo.name": "Ahmed Al-Mansouri",
+        "aboutPage.team.ceo.name": "Mostafa Kandeel",
         "aboutPage.team.ceo.role": "Chief Executive Officer",
         "aboutPage.team.ceo.desc": "20+ years of experience in IT leadership and digital transformation.",
-        "aboutPage.team.cto.name": "Sarah Johnson",
+        "aboutPage.team.cto.name": "Ahmed Kandeel",
         "aboutPage.team.cto.role": "Chief Technology Officer",
         "aboutPage.team.cto.desc": "Expert in cloud architecture and emerging technologies with 15+ years experience.",
-        "aboutPage.team.director.name": "Mohammed Al-Khalifa",
+        "aboutPage.team.director.name": "Alaa Ali",
         "aboutPage.team.director.role": "Operations Director",
         "aboutPage.team.director.desc": "Specializes in service delivery and operational excellence with 18+ years experience.",
-        "aboutPage.team.lead.name": "Jennifer Chen",
+        "aboutPage.team.lead.name": "Mostafa Mahmoud",
         "aboutPage.team.lead.role": "Technical Lead",
         "aboutPage.team.lead.desc": "Leading our technical teams with expertise in cybersecurity and infrastructure.",
         "aboutPage.cta.title": "Ready to Transform Your Business?",
@@ -12261,19 +12261,19 @@ const Yh = [{
 }]
   , Ia = [{
     name: "AWS",
-    logo: "/Amazon-Web-Services-AWS-Logo-Transparent-PNG.png"
+    logo: "/images/Amazon-Web-Services-AWS-Logo-Transparent-PNG.png"
 }, {
     name: "Google Cloud",
-    logo: "/R1.png"
+    logo: "/images/R1.png"
 }, {
     name: "Microsoft",
-    logo: "/R2.png"
+    logo: "/images/R2.png"
 }, {
     name: "Salesforce",
-    logo: "/Sf-marketingcloud-logo-e1587790570648-450x271.png"
+    logo: "/images/Sf-marketingcloud-logo-e1587790570648-450x271.png"
 }, {
     name: "Hostinger",
-    logo: "/Hostinger_logo.png"
+    logo: "/images/Hostinger_logo.png"
 }];
 function Gh() {
     const {t: e} = be();
