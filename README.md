@@ -63,27 +63,14 @@ At LanWave, we foster a culture of:
 We empower ambitious technical and operational professionals to build impactful and rewarding careers — shaping the future of IT in Egypt and beyond.
 
 ---
-
 ## 🖥️ Technology Stack
 
-| Layer            | Technology |
-|------------------|------------|
-| Frontend         | React 18.3.1 |
-| Build Tool       | Vite |
-| Styling          | Tailwind CSS |
-| Routing          | React Router |
-| Deployment       | Bolt.host |
+- ⚛ **React 18.3.1** – Frontend Framework  
+- ⚡ **Vite** – Fast Build Tool  
+- 🎨 **Tailwind CSS** – Styling  
+- 🛣 **React Router** – Routing  
+- ☁️ **Bolt.host** – Deployment  
 
----
-
-## 🚀 Features
-
-- Fully responsive UI  
-- Modern SPA architecture  
-- Smooth page transitions  
-- Clean and professional layout  
-- Service details & company information  
-- Contact section for client inquiries  
 
 ---
 
@@ -92,5 +79,5 @@ We empower ambitious technical and operational professionals to build impactful 
 Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/lanwave-consulting.git
-cd lanwave-consulting
+git clone git@github.com:Mostafa-Kandeel/Graduation-Project-DevOps.git
+cd Graduation-Project-DevOps
