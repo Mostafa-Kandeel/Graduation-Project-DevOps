@@ -9,12 +9,11 @@ This website is built as a **Single Page Application (SPA)** using React, offeri
 ---
 
 ## 🏢 About LanWave
+**Founded in 2010, LanWave has been at the forefront of delivering cutting-edge IT solutions to businesses across the region. What started as a small team of passionate technologists has grown into a leading provider of comprehensive IT services.
 
-**LanWave is a leading IT solutions provider based in Egypt**, delivering modern, end-to-end technology services to businesses of all sizes.  
-For years, we’ve been dedicated to excellence across infrastructure, cloud computing, cybersecurity, managed IT, and digital transformation.
+We have successfully partnered with over 500 organizations, helping them navigate the complexities of modern technology. Our commitment to excellence and innovation has earned us a reputation as a trusted advisor in the IT industry.
 
-We collaborate with top global technology partners to deliver **smart, customizable, and scalable solutions** that create real business impact.
-
+**Today, we continue to push boundaries and set new standards in IT service delivery, maintaining a 99.9% uptime guarantee and delivering solutions that drive real business value for our clients.**
 ---
 
 ## 👨‍💻 Our Expertise
