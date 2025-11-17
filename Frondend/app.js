@@ -10820,7 +10820,7 @@ const jh = {
         "contact.phone.label": "Phone",
         "contact.location.label": "Location",
         "contact.hours": "Business Hours",
-        "contact.weekday": "Monday - Friday",
+        "contact.weekday": "Sunday - Friday",
         "contact.emergency": "Emergency Support",
         "contact.available": "24/7 Available",
         "footer.tagline": "Empowering businesses with cutting-edge IT solutions and managed services for secure, scalable growth.",
@@ -10829,7 +10829,7 @@ const jh = {
         "footer.services": "Services",
         "footer.connect": "Connect With Us",
         "footer.social": "Follow us on social media for updates and insights.",
-        "footer.rights": "© 2025 Mostafa KAndeel. All rights reserved.",
+        "footer.rights": "© 2025 Mostafa Kandeel - DevOps Engineer. All rights reserved.",
         "footer.privacy": "Privacy Policy",
         "footer.terms": "Terms of Service",
         "service.keyFeatures": "Key Features",
@@ -10984,7 +10984,7 @@ const jh = {
         "contact.phone.label": "الهاتف",
         "contact.location.label": "الموقع",
         "contact.hours": "ساعات العمل",
-        "contact.weekday": "الإثنين - الجمعة",
+        "contact.weekday": "الأحد - الجمعة",
         "contact.emergency": "الدعم الطارئ",
         "contact.available": "متاح 24/7",
         "footer.tagline": "تمكين الشركات بحلول تقنية متطورة وخدمات مُدارة للنمو الآمن والقابل للتطوير.",
@@ -11033,16 +11033,16 @@ const jh = {
         "aboutPage.values.excellence.desc": "نحافظ على أعلى المعايير في كل ما نقوم به، من تقديم الخدمات إلى دعم العملاء.",
         "aboutPage.team.title": "فريق القيادة",
         "aboutPage.team.subtitle": "تعرف على الخبراء وراء نجاحنا.",
-        "aboutPage.team.ceo.name": "أحمد المنصوري",
+        "aboutPage.team.ceo.name": "مصطفى قنديل",
         "aboutPage.team.ceo.role": "الرئيس التنفيذي",
         "aboutPage.team.ceo.desc": "أكثر من 20 عاماً من الخبرة في قيادة تقنية المعلومات والتحول الرقمي.",
-        "aboutPage.team.cto.name": "سارة جونسون",
+        "aboutPage.team.cto.name": "أحمد قنديل",
         "aboutPage.team.cto.role": "رئيسة التكنولوجيا",
         "aboutPage.team.cto.desc": "خبيرة في هندسة السحابة والتقنيات الناشئة مع أكثر من 15 عاماً من الخبرة.",
-        "aboutPage.team.director.name": "محمد الخليفة",
+        "aboutPage.team.director.name": "علاء على",
         "aboutPage.team.director.role": "مدير العمليات",
         "aboutPage.team.director.desc": "متخصص في تقديم الخدمات والتميز التشغيلي مع أكثر من 18 عاماً من الخبرة.",
-        "aboutPage.team.lead.name": "جينيفر تشين",
+        "aboutPage.team.lead.name": "مصطفى محمود",
         "aboutPage.team.lead.role": "قائدة التقنية",
         "aboutPage.team.lead.desc": "تقود فرقنا التقنية بخبرة في الأمن السيبراني والبنية التحتية.",
         "aboutPage.cta.title": "هل أنت مستعد لتحويل عملك؟",
@@ -12574,7 +12574,7 @@ function Zh() {
                                             children: e("contact.phone.label")
                                         }), s.jsx("div", {
                                             className: "text-gray-300 text-sm sm:text-base",
-                                            children: "+1 (555) 123-4567"
+                                            children: "+201212040352"
                                         })]
                                     })]
                                 }), s.jsxs("div", {
@@ -12590,7 +12590,7 @@ function Zh() {
                                             children: e("contact.location.label")
                                         }), s.jsxs("div", {
                                             className: "text-gray-300 text-sm sm:text-base",
-                                            children: ["123 Tech Boulevard", s.jsx("br", {}), "Silicon Valley, CA 94025"]
+                                            children: ["Maddi - Egypt ", s.jsx("br", {}), "Silicon Valley, CA 94025"]
                                         })]
                                     })]
                                 })]
