@@ -1,6 +1,6 @@
 # Multi-stage build for static website
-FROM nginx:stable-alpine AS builder
 
+FROM nginx:stable-alpine AS builder
 # Install curl for health checks
 RUN apk add --no-cache curl
 
@@ -18,6 +18,7 @@ COPY index.html /var/www/lanwave/
 COPY style.css /var/www/lanwave/
 Copy app.js /var/www/lanwave/
 Copy images /var/www/lanwave/
+
 
 # Create symlink for site configuration
 RUN ln -sf /etc/nginx/sites-available/lanwave.conf /etc/nginx/sites-enabled/
