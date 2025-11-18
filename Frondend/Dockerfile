@@ -17,7 +17,7 @@ COPY sites-available/ /etc/nginx/sites-available/
 COPY index.html /var/www/lanwave/
 COPY style.css /var/www/lanwave/
 COPY app.js /var/www/lanwave/
-COPY images/ /var/www/lanwave/
+COPY images/ /var/www/lanwave/images/
 
 
 # Create symlink for site configuration
