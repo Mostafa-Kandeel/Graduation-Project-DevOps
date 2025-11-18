@@ -12574,7 +12574,7 @@ function Zh() {
                                             children: e("contact.phone.label")
                                         }), s.jsx("div", {
                                             className: "text-gray-300 text-sm sm:text-base",
-                                            children: "+201212040352"
+                                            children: "+2 1212040352"
                                         })]
                                     })]
                                 }), s.jsxs("div", {
@@ -13603,7 +13603,7 @@ function sg() {
                                     }), s.jsx("a", {
                                         href: "tel:+1234567890",
                                         className: "text-white hover:text-[#FF6B35] transition-colors",
-                                        children: "+1 (234) 567-890"
+                                        children: "+2 1212040352"
                                     })]
                                 })]
                             }), s.jsxs("div", {
