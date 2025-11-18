@@ -80,3 +80,80 @@ Clone the repository:
 ```bash
 git clone git@github.com:Mostafa-Kandeel/Graduation-Project-DevOps.git
 cd Graduation-Project-DevOps
+```
+## Docker Deployment
+
+This project can be containerized and deployed using Docker. Below are the commands to build, run, and manage the Docker container.
+
+### Prerequisites
+- Docker installed on your system
+- Docker daemon running
+
+### Build Docker Image
+
+Build the Docker image with the tag `lanwave:v1`:
+
+```bash
+docker build -t lanwave:v1 .
+```
+
+### Run Docker Container
+
+Run the container in detached mode, mapping port 8080 on the host to port 80 in the container:
+
+```bash
+docker run -d --name lan-web -p 8080:80 lanwave:v1
+```
+
+The website will be accessible at `http://localhost:8080`
+
+### Access Container Shell
+
+To access the container's shell for debugging or inspection:
+
+```bash
+docker exec -it lan-web sh
+```
+
+### Stop Container
+
+Stop the running container:
+
+```bash
+docker container stop lan-web
+```
+
+### Remove Container
+
+Remove the stopped container:
+
+```bash
+docker container rm lan-web
+```
+
+### Remove Docker Image
+
+Remove the Docker image:
+
+```bash
+docker rmi lanwave:v1
+```
+
+### Complete Cleanup and Rebuild
+
+To completely clean up and rebuild from scratch:
+
+```bash
+# Stop and remove container
+docker container stop lan-web
+docker container rm lan-web
+
+# Remove image
+docker rmi lanwave:v1
+
+# Rebuild image
+docker build -t lanwave:v1 .
+
+# Run new container
+docker run -d --name lan-web -p 8080:80 lanwave:v1
+```
