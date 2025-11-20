@@ -1,99 +1,4 @@
 
-
-#bastion host
-resource "aws_instance" "bastion" {
-  ami                    = "ami-0182f373e66f89c85"
-  instance_type          = "t2.micro"
-  subnet_id              = aws_subnet.public_subnet1.id
-  availability_zone      = "us-east-1a"
-  vpc_security_group_ids = [aws_security_group.bastion_sg.id]
-
-  tags = {
-    Name = "BastionHost"
-  }
-}
-
-
-
-
-
-#load balancer
-resource "aws_lb" "alb" {
-  name               = "app-lb"
-  internal           = true
-  load_balancer_type = "application"
-  subnets            = [aws_subnet.priv_subnet1.id, aws_subnet.priv_subnet2.id]
-  security_groups    = [aws_security_group.alb_sg.id]
-}
-
-resource "aws_lb_target_group" "tggroup" {
-  name     = "targetgroup"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.vpc.id
-  health_check {
-    port     = 80
-    protocol = "HTTP"
-    path     = "/"
-  }
-}
-
-resource "aws_lb_listener" "listener" {
-  load_balancer_arn = aws_lb.alb.arn
-  port              = "80"
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.tggroup.arn
-  }
-}
-
-#Security Groups
-resource "aws_security_group" "bastion_sg" {
-  name   = "bastion_sg"
-  vpc_id = aws_vpc.vpc.id
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "bastion_sg"
-  }
-}
-
-resource "aws_security_group" "alb_sg" {
-  name   = "alb_sg"
-  vpc_id = aws_vpc.vpc.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [aws_vpc.vpc.cidr_block]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "alb_sg"
-  }
-}
-
 resource "aws_security_group" "app_sg" {
   name   = "app_sg"
   vpc_id = aws_vpc.vpc.id
@@ -216,3 +121,15 @@ resource "aws_autoscaling_group" "asg" {
     propagate_at_launch = true
   }
 }
+resource "aws_instance" "bastion" {
+  ami                    = "ami-0182f373e66f89c85"
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.public_subnet1.id
+  availability_zone      = "us-east-1a"
+  vpc_security_group_ids = [aws_security_group.bastion_sg.id]
+
+  tags = {
+    Name = "BastionHost"
+  }
+}
+
