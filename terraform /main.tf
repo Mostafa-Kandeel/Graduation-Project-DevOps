@@ -1,6 +1,6 @@
 # Create a VPC
 resource "aws_vpc" "vpc" {
-  cidr_block = "var.vpc_cidr"
+  cidr_block = var.vpc_cidr
   tags = {
     Name = "main_vpc"
   }
@@ -9,7 +9,7 @@ resource "aws_vpc" "vpc" {
 # Create Public Subnets
 resource "aws_subnet" "public_subnet1" {
     vpc_id            = aws_vpc.vpc.id
-    cidr_block        = "var.public_subnet_cidr_a"
+    cidr_block        = var.public_subnet_cidr_a
     availability_zone = "${var.aws_region}a"
     
     tags = {
@@ -19,7 +19,7 @@ resource "aws_subnet" "public_subnet1" {
 
 resource "aws_subnet" "public_subnet2" {
     vpc_id = aws_vpc.vpc.id
-    cidr_block = "var.public_subnet_cidr_b"
+    cidr_block = var.public_subnet_cidr_b
     availability_zone = "${var.aws_region}b"
     tags = {
         Name = "public_subnet_b"
@@ -29,7 +29,7 @@ resource "aws_subnet" "public_subnet2" {
 # Create Private Subnets
 resource "aws_subnet" "private_subnet1" {
     vpc_id = aws_vpc.vpc.id
-    cidr_block = "var.private_subnet_cidr_a"
+    cidr_block = var.private_subnet_cidr_a
     availability_zone = "${var.aws_region}a"
     tags = {
         Name = "private_subnet_a"
@@ -37,7 +37,7 @@ resource "aws_subnet" "private_subnet1" {
 }
 resource "aws_subnet" "private_subnet2" {
     vpc_id = aws_vpc.vpc.id
-    cidr_block = "var.private_subnet_cidr_b"
+    cidr_block = var.private_subnet_cidr_b
     availability_zone = "${var.aws_region}b"
     tags = {
         Name = "private_subnet_b"
@@ -64,7 +64,7 @@ resource "aws_internet_gateway" "igw" {
     vpc_id = aws_vpc.vpc.id
     tags = {
         Name = "internet-gateway"
-}
+    }
 }
 #-------------------------------------------------------
 # Create Route Tables
@@ -255,6 +255,66 @@ resource "aws_s3_bucket" "app_storage" {
 }
 
 #-------------------------------------------------------
+# ECR Repository to Store Docker images 
+resource "aws_ecr_repository" "app_repo" {
+  name = "my-app-repo"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name = "app-ecr-repo"
+  }
+}
+
+# This Policy will help you to push/pull on ECR
+resource "aws_ecr_repository_policy" "app_repo_policy" {
+  repository = aws_ecr_repository.app_repo.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = "*"
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:PutImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload"
+        ]
+      }
+    ]
+  })
+}
+
+# Lifecycle policy to keep last 5 images
+resource "aws_ecr_lifecycle_policy" "app_lifecycle" {
+  repository = aws_ecr_repository.app_repo.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 5 images"
+        selection = {
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 5
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
+#-------------------------------------------------------
 #iam role for ec2
 resource "aws_iam_role" "ec2_role" {
   name = "ec2_role"
@@ -301,10 +361,54 @@ resource "aws_iam_policy" "s3_access_policy" {
   })
 }
 
+# ECR access policy 
+resource "aws_iam_policy" "ecr_access_policy" {
+  name = "ecr_access_policy"
+  
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:GetRepositoryPolicy",
+          "ecr:DescribeRepositories",
+          "ecr:ListImages",
+          "ecr:DescribeImages",
+          "ecr:BatchGetImage",
+          "ecr:GetLifecyclePolicy",
+          "ecr:GetLifecyclePolicyPreview",
+          "ecr:ListTagsForResource",
+          "ecr:DescribeImageScanFindings"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      },
+      {
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability"
+        ]
+        Effect   = "Allow"
+        Resource = aws_ecr_repository.app_repo.arn
+      }
+    ]
+  })
+}
+
 #attach policy to role
 resource "aws_iam_role_policy_attachment" "attach_s3_policy" {
   role       = aws_iam_role.ec2_role.name
   policy_arn = aws_iam_policy.s3_access_policy.arn
+}
+
+# نattach الـ ECR policy للـ role
+resource "aws_iam_role_policy_attachment" "attach_ecr_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.ecr_access_policy.arn
 }
 
 #instance profile
@@ -341,7 +445,7 @@ resource "aws_autoscaling_group" "asg" {
   min_size                  = 1
   desired_capacity          = 2
   launch_configuration      = aws_launch_configuration.asc.name
-  vpc_zone_identifier       = [aws_subnet.priv_subnet1.id, aws_subnet.priv_subnet2.id]
+  vpc_zone_identifier       = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
   target_group_arns         = [aws_lb_target_group.tggroup.arn]
   health_check_type         = "ELB"
   health_check_grace_period = 300
