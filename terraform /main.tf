@@ -127,6 +127,8 @@ resource "aws_instance" "bastion" {
   subnet_id              = aws_subnet.public_subnet2.id
   vpc_security_group_ids = [aws_security_group.bastion_sg.id]
   key_name               = "my-new-key-bastion"
+  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
+
 
   tags = {
     Name = "Bastion_Host"
@@ -219,3 +221,134 @@ resource "aws_security_group" "alb_sg" {
   }
 }
 #-------------------------------------------------------
+# Application Security Group
+
+resource "aws_security_group" "app_sg" {
+  name   = "app_sg"
+  vpc_id = aws_vpc.vpc.id
+
+  ingress {
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_sg.id] # only ALB can reach app
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "app_sg"
+  }
+}
+#-------------------------------------------------------
+# S3 bucket
+resource "aws_s3_bucket" "app_storage" {
+    bucket = "lanwave-website-storage-bucket-2025"
+    tags = {
+        Name = "app_storage_bucket"
+    }
+}
+
+#-------------------------------------------------------
+#iam role for ec2
+resource "aws_iam_role" "ec2_role" {
+  name = "ec2_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+#s3 access policy 
+resource "aws_iam_policy" "s3_access_policy" {
+  name = "s3_access_policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      # ListBucket permission
+      {
+        Action = [
+          "s3:ListBucket"
+        ]
+        Effect   = "Allow"
+        Resource = aws_s3_bucket.app_storage.arn
+      },
+
+      # Object permissions
+      {
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject"
+        ]
+        Effect   = "Allow"
+        Resource = "${aws_s3_bucket.app_storage.arn}/*"
+      }
+    ]
+  })
+}
+
+#attach policy to role
+resource "aws_iam_role_policy_attachment" "attach_s3_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.s3_access_policy.arn
+}
+
+#instance profile
+resource "aws_iam_instance_profile" "ec2_instance_profile" {
+  name = "ec2_instance_profile"
+  role = aws_iam_role.ec2_role.name
+}
+#-------------------------------------------------------
+
+#auto scaling group
+resource "aws_launch_configuration" "asc" {
+  name                 = "asc-launch-config"
+  image_id             = "ami-0182f373e66f89c85"
+  instance_type        = "t2.micro"
+  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
+  security_groups      = [aws_security_group.app_sg.id]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+  user_data = <<-EOF
+    #!/bin/bash
+    yum update -y
+    yum install -y python3
+    echo "Hello, World from ASG , $(hostname -f) " > /home/ec2-user/index.html
+    cd /home/ec2-user
+    python3 -m http.server 80 &
+    EOF
+}
+
+resource "aws_autoscaling_group" "asg" {
+  name                      = "asg-group"
+  max_size                  = 3
+  min_size                  = 1
+  desired_capacity          = 2
+  launch_configuration      = aws_launch_configuration.asc.name
+  vpc_zone_identifier       = [aws_subnet.priv_subnet1.id, aws_subnet.priv_subnet2.id]
+  target_group_arns         = [aws_lb_target_group.tggroup.arn]
+  health_check_type         = "ELB"
+  health_check_grace_period = 300
+
+  tag {
+    key                 = "Name"
+    value               = "ASG-Instance"
+    propagate_at_launch = true
+  }
+}
