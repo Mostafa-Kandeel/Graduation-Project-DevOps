@@ -255,7 +255,7 @@ resource "aws_s3_bucket" "app_storage" {
 }
 
 #-------------------------------------------------------
-# ECR Repository to Store Docker images 
+# ECR Repository للصورة
 resource "aws_ecr_repository" "app_repo" {
   name = "my-app-repo"
 
@@ -268,7 +268,7 @@ resource "aws_ecr_repository" "app_repo" {
   }
 }
 
-# This Policy will help you to push/pull on ECR
+# Policy علشان نتمكن من push/pull للـ ECR
 resource "aws_ecr_repository_policy" "app_repo_policy" {
   repository = aws_ecr_repository.app_repo.name
 
@@ -292,7 +292,7 @@ resource "aws_ecr_repository_policy" "app_repo_policy" {
   })
 }
 
-# Lifecycle policy to keep last 5 images
+# Lifecycle policy للصور القديمة
 resource "aws_ecr_lifecycle_policy" "app_lifecycle" {
   repository = aws_ecr_repository.app_repo.name
 
@@ -315,9 +315,10 @@ resource "aws_ecr_lifecycle_policy" "app_lifecycle" {
 }
 
 #-------------------------------------------------------
-#iam role for ec2
-resource "aws_iam_role" "ec2_role" {
-  name = "ec2_role"
+# IAM Roles for ECS
+# ECS Task Execution Role
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name = "ecs_task_execution_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -326,42 +327,38 @@ resource "aws_iam_role" "ec2_role" {
         Action = "sts:AssumeRole"
         Effect = "Allow"
         Principal = {
-          Service = "ec2.amazonaws.com"
+          Service = "ecs-tasks.amazonaws.com"
         }
       },
     ]
   })
 }
 
-#s3 access policy 
-resource "aws_iam_policy" "s3_access_policy" {
-  name = "s3_access_policy"
-  policy = jsonencode({
+# ECS Task Role
+resource "aws_iam_role" "ecs_task_role" {
+  name = "ecs_task_role"
+
+  assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      # ListBucket permission
       {
-        Action = [
-          "s3:ListBucket"
-        ]
-        Effect   = "Allow"
-        Resource = aws_s3_bucket.app_storage.arn
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
       },
-
-      # Object permissions
-      {
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject"
-        ]
-        Effect   = "Allow"
-        Resource = "${aws_s3_bucket.app_storage.arn}/*"
-      }
     ]
   })
 }
 
-# ECR access policy 
+# Attach ECR policies to execution role
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# Custom policy for ECR access
 resource "aws_iam_policy" "ecr_access_policy" {
   name = "ecr_access_policy"
   
@@ -399,60 +396,132 @@ resource "aws_iam_policy" "ecr_access_policy" {
   })
 }
 
-#attach policy to role
-resource "aws_iam_role_policy_attachment" "attach_s3_policy" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = aws_iam_policy.s3_access_policy.arn
-}
-
-# نattach الـ ECR policy للـ role
-resource "aws_iam_role_policy_attachment" "attach_ecr_policy" {
-  role       = aws_iam_role.ec2_role.name
+resource "aws_iam_role_policy_attachment" "ecr_access_attachment" {
+  role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = aws_iam_policy.ecr_access_policy.arn
 }
 
-#instance profile
-resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "ec2_instance_profile"
-  role = aws_iam_role.ec2_role.name
+# S3 access policy للـ ECS tasks
+resource "aws_iam_policy" "s3_access_policy" {
+  name = "s3_access_policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "s3:ListBucket"
+        ]
+        Effect   = "Allow"
+        Resource = aws_s3_bucket.app_storage.arn
+      },
+      {
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject"
+        ]
+        Effect   = "Allow"
+        Resource = "${aws_s3_bucket.app_storage.arn}/*"
+      }
+    ]
+  })
 }
+
+resource "aws_iam_role_policy_attachment" "s3_access_attachment" {
+  role       = aws_iam_role.ecs_task_role.name
+  policy_arn = aws_iam_policy.s3_access_policy.arn
+}
+
 #-------------------------------------------------------
+# ECS Cluster
+resource "aws_ecs_cluster" "app_cluster" {
+  name = "app-cluster"
 
-#auto scaling group
-resource "aws_launch_configuration" "asc" {
-  name                 = "asc-launch-config"
-  image_id             = "ami-0182f373e66f89c85"
-  instance_type        = "t2.micro"
-  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
-  security_groups      = [aws_security_group.app_sg.id]
-
-  lifecycle {
-    create_before_destroy = true
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
   }
-  user_data = <<-EOF
-    #!/bin/bash
-    yum update -y
-    yum install -y python3
-    echo "Hello, World from ASG , $(hostname -f) " > /home/ec2-user/index.html
-    cd /home/ec2-user
-    python3 -m http.server 80 &
-    EOF
+
+  tags = {
+    Name = "app-ecs-cluster"
+  }
 }
 
-resource "aws_autoscaling_group" "asg" {
-  name                      = "asg-group"
-  max_size                  = 3
-  min_size                  = 1
-  desired_capacity          = 2
-  launch_configuration      = aws_launch_configuration.asc.name
-  vpc_zone_identifier       = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
-  target_group_arns         = [aws_lb_target_group.tggroup.arn]
-  health_check_type         = "ELB"
-  health_check_grace_period = 300
+# ECS Task Definition
+resource "aws_ecs_task_definition" "app_task" {
+  family                   = "app-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = 256
+  memory                   = 512
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
 
-  tag {
-    key                 = "Name"
-    value               = "ASG-Instance"
-    propagate_at_launch = true
+  container_definitions = jsonencode([
+    {
+      name      = "app-container"
+      image     = "${aws_ecr_repository.app_repo.repository_url}:latest"
+      cpu       = 256
+      memory    = 512
+      essential = true
+      portMappings = [
+        {
+          containerPort = 80
+          hostPort      = 80
+          protocol      = "tcp"
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = "/ecs/app-task"
+          awslogs-region        = var.aws_region
+          awslogs-stream-prefix = "ecs"
+        }
+      }
+    }
+  ])
+
+  tags = {
+    Name = "app-task-definition"
+  }
+}
+
+# ECS Service
+resource "aws_ecs_service" "app_service" {
+  name            = "app-service"
+  cluster         = aws_ecs_cluster.app_cluster.id
+  task_definition = aws_ecs_task_definition.app_task.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
+    security_groups = [aws_security_group.app_sg.id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.tggroup.arn
+    container_name   = "app-container"
+    container_port   = 80
+  }
+
+  depends_on = [
+    aws_lb_listener.listener
+  ]
+
+  tags = {
+    Name = "app-ecs-service"
+  }
+}
+
+#-------------------------------------------------------
+# CloudWatch Log Group للـ ECS
+resource "aws_cloudwatch_log_group" "ecs_logs" {
+  name = "/ecs/app-task"
+  retention_in_days = 7
+
+  tags = {
+    Name = "ecs-app-logs"
   }
 }
