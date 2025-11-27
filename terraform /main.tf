@@ -120,14 +120,14 @@ resource "aws_eip" "bastion_eip" {
     Name = "bastion_eip"
   }
 }
+#-------------------------------------------------------
 #bastion host
 resource "aws_instance" "bastion" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t3.micro"
   subnet_id              = aws_subnet.public_subnet2.id
   vpc_security_group_ids = [aws_security_group.bastion_sg.id]
-  key_name               = "my-new-key-bastion"
-  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
+  key_name               = "key-pair2"
 
 
   tags = {
@@ -158,6 +158,60 @@ resource "aws_security_group" "bastion_sg" {
     Name = "bastion_sg"
   }
 }
+
+#-------------------------------------------------------
+#create instance in each private subnet
+resource "aws_instance" "app_instance" {
+  for_each = {
+    "instance1" = aws_subnet.private_subnet1.id
+    "instance2" = aws_subnet.private_subnet2.id
+  }
+  
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t3.micro"
+  subnet_id              = each.value
+  vpc_security_group_ids = [aws_security_group.instance_sg.id]
+  key_name               = "key-pair2"
+  
+  tags = {
+    Name = "app-${each.key}"
+  }
+}
+
+# security group for app instances
+resource "aws_security_group" "instance_sg" {
+    name        = "instance_sg"
+    description = "Security group for private subnet instances"
+    vpc_id      = aws_vpc.vpc.id
+    
+    ingress {
+        from_port   = 22
+        to_port     = 22
+        protocol    = "tcp"
+        cidr_blocks = [aws_vpc.vpc.cidr_block]  
+    }
+    
+    ingress {
+        from_port   = 80
+        to_port     = 80
+        protocol    = "tcp"
+        cidr_blocks = [aws_vpc.vpc.cidr_block]
+    }
+    
+    ingress {
+        from_port   = 443
+        to_port     = 443
+        protocol    = "tcp"
+        cidr_blocks = [aws_vpc.vpc.cidr_block]
+    }
+    
+    egress {
+        from_port   = 0
+        to_port     = 0
+        protocol    = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
 #-------------------------------------------------------
 
 #load balancer
@@ -170,14 +224,25 @@ resource "aws_lb" "alb" {
 }
 # target group for ALB
 resource "aws_lb_target_group" "tggroup" {
-  name     = "targetgroup"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.vpc.id
+  name        = "targetgroup"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.vpc.id
+  target_type = "ip"
+
   health_check {
-    port     = 80
-    protocol = "HTTP"
-    path     = "/"
+    port                = 80
+    protocol            = "HTTP"
+    path                = "/"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    matcher             = "200"
+  }
+
+  tags = {
+    Name = "ecs-target-group"
   }
 }
 
@@ -255,7 +320,7 @@ resource "aws_s3_bucket" "app_storage" {
 }
 
 #-------------------------------------------------------
-# ECR Repository للصورة
+# ECR Repository for store images
 resource "aws_ecr_repository" "app_repo" {
   name = "my-app-repo"
 
@@ -268,7 +333,7 @@ resource "aws_ecr_repository" "app_repo" {
   }
 }
 
-# Policy علشان نتمكن من push/pull للـ ECR
+# Policy to allow ECS tasks to pull/push images
 resource "aws_ecr_repository_policy" "app_repo_policy" {
   repository = aws_ecr_repository.app_repo.name
 
@@ -292,7 +357,7 @@ resource "aws_ecr_repository_policy" "app_repo_policy" {
   })
 }
 
-# Lifecycle policy للصور القديمة
+# Lifecycle policy to clean up old images
 resource "aws_ecr_lifecycle_policy" "app_lifecycle" {
   repository = aws_ecr_repository.app_repo.name
 
@@ -401,7 +466,7 @@ resource "aws_iam_role_policy_attachment" "ecr_access_attachment" {
   policy_arn = aws_iam_policy.ecr_access_policy.arn
 }
 
-# S3 access policy للـ ECS tasks
+# S3 access policy for ECS Task Role
 resource "aws_iam_policy" "s3_access_policy" {
   name = "s3_access_policy"
   policy = jsonencode({
@@ -425,6 +490,7 @@ resource "aws_iam_policy" "s3_access_policy" {
     ]
   })
 }
+
 
 resource "aws_iam_role_policy_attachment" "s3_access_attachment" {
   role       = aws_iam_role.ecs_task_role.name
