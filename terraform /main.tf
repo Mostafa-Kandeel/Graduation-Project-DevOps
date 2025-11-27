@@ -217,7 +217,7 @@ resource "aws_security_group" "instance_sg" {
 #load balancer
 resource "aws_lb" "alb" {
   name               = "app-lb"
-  internal           = true
+  internal           = false
   load_balancer_type = "application"
   subnets            = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
   security_groups    = [aws_security_group.alb_sg.id]
