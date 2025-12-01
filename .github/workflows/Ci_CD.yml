@@ -67,3 +67,7 @@ jobs:
       - name: Terraform Apply
         working-directory: ./terraform
         run: terraform apply -auto-approve -var="image_tag=${{ github.sha }}"
+        
+      - name: Terraform destroy
+        working-directory: ./terraform
+        run: terraform destroy -auto-approve -var="image_tag=${{ github.sha }}"
