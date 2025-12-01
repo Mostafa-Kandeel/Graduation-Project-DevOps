@@ -10,8 +10,5 @@ terraform {
 # Configure the AWS Provider
 provider "aws" {
   region = var.aws_region
-<<<<<<< HEAD
-}
-=======
 }
 >>>>>>> 6263386 (new)
