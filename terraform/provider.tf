@@ -11,4 +11,3 @@ terraform {
 provider "aws" {
   region = var.aws_region
 }
->>>>>>> 6263386 (new)

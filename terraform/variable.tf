@@ -34,3 +34,8 @@ variable "private_subnet_cidr_b" {
   type        = string
   default     = "10.0.11.0/24"
 }
+
+variable "image_tag" {
+  description = "Docker image tag to deploy"
+  type        = string
+}
