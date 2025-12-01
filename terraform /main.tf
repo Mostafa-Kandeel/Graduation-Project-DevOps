@@ -313,7 +313,7 @@ resource "aws_security_group" "app_sg" {
 #-------------------------------------------------------
 # S3 bucket
 resource "aws_s3_bucket" "app_storage" {
-    bucket = "lanwave-website-storage-bucket-2025"
+    bucket = "lanwavewebsite-storage-bucket-2025"
     tags = {
         Name = "app_storage_bucket"
     }
@@ -327,7 +327,6 @@ resource "aws_ecr_repository" "app_repo" {
   image_scanning_configuration {
     scan_on_push = true
   }
-
   tags = {
     Name = "app-ecr-repo"
   }
