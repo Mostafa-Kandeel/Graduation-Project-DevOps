@@ -53,11 +53,9 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Terraform Init
-        working-directory: ./terraform
         run: terraform init
 
       - name: Terraform Validate
-        working-directory: ./terraform
         run: terraform validate
 
       - name: Terraform Plan
