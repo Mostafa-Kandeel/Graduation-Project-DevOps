@@ -111,56 +111,122 @@ resource "aws_route_table_association" "private_rt_assoc1" {
     route_table_id = aws_route_table.private_rt.id
 }
 #-------------------------------------------------------
-
-resource "aws_eip" "bastion_eip" {
-  instance = aws_instance.bastion.id
-  domain   = "vpc"
-
-  tags = {
-    Name = "bastion_eip"
-  }
-}
-#-------------------------------------------------------
-#bastion host
-resource "aws_instance" "bastion" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t3.micro"
-  subnet_id              = aws_subnet.public_subnet2.id
-  vpc_security_group_ids = [aws_security_group.bastion_sg.id]
-  key_name               = "key-pair2"
-
-
-  tags = {
-    Name = "Bastion_Host"
-  }
-}
-
-
-# Security Groups
 resource "aws_security_group" "bastion_sg" {
-  name   = "bastion_sg"
-  vpc_id = aws_vpc.vpc.id
-
+  name        = "bastion_sg"
+  description = "Security group for bastion host"
+  vpc_id      = aws_vpc.vpc.id
+  
   ingress {
+    description = "SSH from my IP only"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
+  
   tags = {
     Name = "bastion_sg"
   }
 }
+#-------------------------------------------------------
+resource "aws_instance" "bastion" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.public_subnet2.id
+  vpc_security_group_ids = [aws_security_group.bastion_sg.id]
+  key_name               = "key-pair2"
+  
+  tags = {
+    Name = "Bastion_Host"
+  }
+}
+
+resource "aws_eip" "bastion_eip" {
+  instance = aws_instance.bastion.id
+  domain   = "vpc"
+  
+  tags = {
+    Name = "bastion_eip"
+  }
+}
+#-------------------------------------------------------
+# ALB Security Group alb_sg
+resource "aws_security_group" "alb_sg" {
+  name        = "alb_sg"
+  description = "Security group for Application Load Balancer"
+  vpc_id      = aws_vpc.vpc.id
+  
+  ingress {
+    description = "HTTP from internet"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  ingress {
+    description = "HTTPS from internet"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  tags = {
+    Name = "alb_sg"
+  }
+}
+#-------------------------------------------------------
+# Security Group for Web Instances
+resource "aws_security_group" "web_sg" {
+  name        = "web_sg"
+  description = "Security group for web application instances"
+  vpc_id      = aws_vpc.vpc.id
+  
+  ingress {
+    description     = "HTTP from ALB"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_sg.id]
+  }
+  
+  ingress {
+    description     = "SSH from Bastion Host"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion_sg.id]
+  }
+  
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  tags = {
+    Name = "web_sg"
+  }
+}
 
 #-------------------------------------------------------
-#create instance in each private subnet
+# EC2 Instances in private subnet
 resource "aws_instance" "app_instance" {
   for_each = {
     "instance1" = aws_subnet.private_subnet1.id
@@ -168,148 +234,18 @@ resource "aws_instance" "app_instance" {
   }
   
   ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t3.micro"
+  instance_type          = "t2.micro"
   subnet_id              = each.value
-  vpc_security_group_ids = [aws_security_group.instance_sg.id]
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
   key_name               = "key-pair2"
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  user_data              = base64encode(data.template_file.user_data.rendered)
   
   tags = {
     Name = "app-${each.key}"
   }
 }
 
-# security group for app instances
-resource "aws_security_group" "instance_sg" {
-    name        = "instance_sg"
-    description = "Security group for private subnet instances"
-    vpc_id      = aws_vpc.vpc.id
-    
-    ingress {
-        from_port   = 22
-        to_port     = 22
-        protocol    = "tcp"
-        cidr_blocks = [aws_vpc.vpc.cidr_block]  
-    }
-    
-    ingress {
-        from_port   = 80
-        to_port     = 80
-        protocol    = "tcp"
-        cidr_blocks = [aws_vpc.vpc.cidr_block]
-    }
-    
-    ingress {
-        from_port   = 443
-        to_port     = 443
-        protocol    = "tcp"
-        cidr_blocks = [aws_vpc.vpc.cidr_block]
-    }
-    
-    egress {
-        from_port   = 0
-        to_port     = 0
-        protocol    = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-}
-#-------------------------------------------------------
-
-#load balancer
-resource "aws_lb" "alb" {
-  name               = "app-lb"
-  internal           = false
-  load_balancer_type = "application"
-  subnets            = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
-  security_groups    = [aws_security_group.alb_sg.id]
-}
-# target group for ALB
-resource "aws_lb_target_group" "tggroup" {
-  name        = "targetgroup"
-  port        = 80
-  protocol    = "HTTP"
-  vpc_id      = aws_vpc.vpc.id
-  target_type = "ip"
-
-  health_check {
-    port                = 80
-    protocol            = "HTTP"
-    path                = "/"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    matcher             = "200"
-  }
-
-  tags = {
-    Name = "ecs-target-group"
-  }
-}
-
-resource "aws_lb_listener" "listener" {
-  load_balancer_arn = aws_lb.alb.arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.tggroup.arn
-  }
-}
-
-#Security Groups
-resource "aws_security_group" "alb_sg" {
-  name   = "alb_sg"
-  vpc_id = aws_vpc.vpc.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [aws_vpc.vpc.cidr_block]
-  }
-  ingress {
-  from_port   = 443
-  to_port     = 443
-  protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
-}
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "alb_sg"
-  }
-}
-#-------------------------------------------------------
-# Application Security Group
-
-resource "aws_security_group" "app_sg" {
-  name   = "app_sg"
-  vpc_id = aws_vpc.vpc.id
-
-  ingress {
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb_sg.id] # only ALB can reach app
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "app_sg"
-  }
-}
 #-------------------------------------------------------
 # S3 bucket
 resource "aws_s3_bucket" "app_storage" {
@@ -327,12 +263,13 @@ resource "aws_ecr_repository" "app_repo" {
   image_scanning_configuration {
     scan_on_push = true
   }
+  
   tags = {
     Name = "app-ecr-repo"
   }
 }
-
-# Policy to allow ECS tasks to pull/push images
+#-------------------------------------------------------
+# ECR Repository Policy to allow ec2 access ECR
 resource "aws_ecr_repository_policy" "app_repo_policy" {
   repository = aws_ecr_repository.app_repo.name
 
@@ -340,8 +277,11 @@ resource "aws_ecr_repository_policy" "app_repo_policy" {
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "AllowEC2PullPush"
         Effect = "Allow"
-        Principal = "*"
+        Principal = {
+          AWS = aws_iam_role.ec2_ecr_role.arn
+        }
         Action = [
           "ecr:GetDownloadUrlForLayer",
           "ecr:BatchGetImage",
@@ -349,13 +289,14 @@ resource "aws_ecr_repository_policy" "app_repo_policy" {
           "ecr:PutImage",
           "ecr:InitiateLayerUpload",
           "ecr:UploadLayerPart",
-          "ecr:CompleteLayerUpload"
+          "ecr:CompleteLayerUpload",
+          "ecr:GetAuthorizationToken"
         ]
       }
     ]
   })
 }
-
+#-------------------------------------------------------
 # Lifecycle policy to clean up old images
 resource "aws_ecr_lifecycle_policy" "app_lifecycle" {
   repository = aws_ecr_repository.app_repo.name
@@ -379,10 +320,9 @@ resource "aws_ecr_lifecycle_policy" "app_lifecycle" {
 }
 
 #-------------------------------------------------------
-# IAM Roles for ECS
-# ECS Task Execution Role
-resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "ecs_task_execution_role"
+# IAM Role for EC2 to access ECR AND S3
+resource "aws_iam_role" "ec2_ecr_role" {
+  name = "ec2_ecr_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -391,203 +331,137 @@ resource "aws_iam_role" "ecs_task_execution_role" {
         Action = "sts:AssumeRole"
         Effect = "Allow"
         Principal = {
-          Service = "ecs-tasks.amazonaws.com"
+          Service = "ec2.amazonaws.com"
         }
-      },
+      }
     ]
   })
 }
-
-# ECS Task Role
-resource "aws_iam_role" "ecs_task_role" {
-  name = "ecs_task_role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-      },
-    ]
-  })
+#-------------------------------------------------------
+# Attach AmazonEC2ContainerRegistryReadOnly Policy
+resource "aws_iam_role_policy_attachment" "ecr_read_only" {
+  role       = aws_iam_role.ec2_ecr_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
-
-# Attach ECR policies to execution role
-resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
-  role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-# Custom policy for ECR access
-resource "aws_iam_policy" "ecr_access_policy" {
-  name = "ecr_access_policy"
+#-------------------------------------------------------
+# Custom ECR Push Policy
+resource "aws_iam_policy" "ecr_push_policy" {
+  name = "ecr_push_policy"
   
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "ECRPushPermissions"
+        Effect = "Allow"
         Action = [
-          "ecr:GetAuthorizationToken",
+          "ecr:PutImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload",
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetDownloadUrlForLayer",
-          "ecr:GetRepositoryPolicy",
-          "ecr:DescribeRepositories",
-          "ecr:ListImages",
-          "ecr:DescribeImages",
-          "ecr:BatchGetImage",
-          "ecr:GetLifecyclePolicy",
-          "ecr:GetLifecyclePolicyPreview",
-          "ecr:ListTagsForResource",
-          "ecr:DescribeImageScanFindings"
+          "ecr:BatchGetImage"
         ]
-        Effect   = "Allow"
-        Resource = "*"
+        Resource = aws_ecr_repository.app_repo.arn
       },
       {
+        Sid    = "ECRGetAuthorizationToken"
+        Effect = "Allow"
         Action = [
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-          "ecr:BatchCheckLayerAvailability"
+          "ecr:GetAuthorizationToken"
         ]
-        Effect   = "Allow"
-        Resource = aws_ecr_repository.app_repo.arn
+        Resource = "*"
       }
     ]
   })
 }
-
-resource "aws_iam_role_policy_attachment" "ecr_access_attachment" {
-  role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = aws_iam_policy.ecr_access_policy.arn
+#-------------------------------------------------------
+resource "aws_iam_role_policy_attachment" "ecr_push_attachment" {
+  role       = aws_iam_role.ec2_ecr_role.name
+  policy_arn = aws_iam_policy.ecr_push_policy.arn
 }
-
-# S3 access policy for ECS Task Role
-resource "aws_iam_policy" "s3_access_policy" {
-  name = "s3_access_policy"
+#-------------------------------------------------------
+# S3 Access Policy للـ EC2
+resource "aws_iam_policy" "ec2_s3_access_policy" {
+  name = "ec2_s3_access_policy"
+  
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "ListBucket"
+        Effect = "Allow"
         Action = [
           "s3:ListBucket"
         ]
-        Effect   = "Allow"
         Resource = aws_s3_bucket.app_storage.arn
       },
       {
+        Sid    = "ObjectAccess"
+        Effect = "Allow"
         Action = [
           "s3:GetObject",
-          "s3:PutObject"
+          "s3:PutObject",
+          "s3:DeleteObject"
         ]
-        Effect   = "Allow"
         Resource = "${aws_s3_bucket.app_storage.arn}/*"
       }
     ]
   })
 }
+#-------------------------------------------------------
+resource "aws_iam_role_policy_attachment" "ec2_s3_attachment" {
+  role       = aws_iam_role.ec2_ecr_role.name
+  policy_arn = aws_iam_policy.ec2_s3_access_policy.arn
+}
 
-
-resource "aws_iam_role_policy_attachment" "s3_access_attachment" {
-  role       = aws_iam_role.ecs_task_role.name
-  policy_arn = aws_iam_policy.s3_access_policy.arn
+# IAM Instance Profile للـ EC2
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ec2_ecr_profile"
+  role = aws_iam_role.ec2_ecr_role.name
 }
 
 #-------------------------------------------------------
-# ECS Cluster
-resource "aws_ecs_cluster" "app_cluster" {
-  name = "app-cluster"
-
-  setting {
-    name  = "containerInsights"
-    value = "enabled"
-  }
-
-  tags = {
-    Name = "app-ecs-cluster"
-  }
+# Update User Data Script ليشمل S3 access
+data "template_file" "user_data" {
+  template = <<-EOF
+              #!/bin/bash
+              # Update system
+              apt-get update -y
+              
+              # Install Docker
+              apt-get install -y docker.io
+              systemctl start docker
+              systemctl enable docker
+              
+              # Install AWS CLI
+              apt-get install -y awscli
+              
+              # Create directory for app
+              mkdir -p /app
+              
+              # Login to ECR
+              aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${aws_ecr_repository.app_repo.repository_url}
+              
+              # Pull and run Docker container
+              docker pull ${aws_ecr_repository.app_repo.repository_url}:latest
+              
+              # Run container
+              docker run -d \
+                --name myapp \
+                -p 80:80 \
+                -e AWS_REGION=${var.aws_region} \
+                -v /app:/data \
+                ${aws_ecr_repository.app_repo.repository_url}:latest
+              
+              # Optional: Download/Upload from/to S3
+              # aws s3 cp s3://${aws_s3_bucket.app_storage.bucket}/app-config.json /app/config.json
+              # aws s3 sync /app/logs s3://${aws_s3_bucket.app_storage.bucket}/logs/
+              
+              # Health check endpoint
+              echo "Health check endpoint created" > /var/www/html/health
+              EOF
 }
 
-# ECS Task Definition
-resource "aws_ecs_task_definition" "app_task" {
-  family                   = "app-task"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = 256
-  memory                   = 512
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  task_role_arn            = aws_iam_role.ecs_task_role.arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "app-container"
-      image     = "${aws_ecr_repository.app_repo.repository_url}:${var.image_tag}"
-
-      cpu       = 256
-      memory    = 512
-      essential = true
-      portMappings = [
-        {
-          containerPort = 80
-          hostPort      = 80
-          protocol      = "tcp"
-        }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = "/ecs/app-task"
-          awslogs-region        = var.aws_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
-    }
-  ])
-
-  tags = {
-    Name = "app-task-definition"
-  }
-}
-
-# ECS Service
-resource "aws_ecs_service" "app_service" {
-  name            = "app-service"
-  cluster         = aws_ecs_cluster.app_cluster.id
-  task_definition = aws_ecs_task_definition.app_task.arn
-  desired_count   = 2
-  launch_type     = "FARGATE"
-
-  network_configuration {
-    subnets         = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
-    security_groups = [aws_security_group.app_sg.id]
-    assign_public_ip = false
-  }
-
-  load_balancer {
-    target_group_arn = aws_lb_target_group.tggroup.arn
-    container_name   = "app-container"
-    container_port   = 80
-  }
-
-  depends_on = [
-    aws_lb_listener.listener
-  ]
-
-  tags = {
-    Name = "app-ecs-service"
-  }
-}
-
-#-------------------------------------------------------
-# CloudWatch Log Group للـ ECS
-resource "aws_cloudwatch_log_group" "ecs_logs" {
-  name = "/ecs/app-task"
-  retention_in_days = 7
-
-  tags = {
-    Name = "ecs-app-logs"
-  }
-}
