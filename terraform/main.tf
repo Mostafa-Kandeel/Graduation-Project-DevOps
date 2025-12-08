@@ -422,46 +422,4 @@ resource "aws_iam_instance_profile" "ec2_profile" {
   role = aws_iam_role.ec2_ecr_role.name
 }
 
-#-------------------------------------------------------
-# Update User Data Script ليشمل S3 access
-data "template_file" "user_data" {
-  template = <<-EOF
-              #!/bin/bash
-              # Update system
-              apt-get update -y
-              
-              # Install Docker
-              apt-get install -y docker.io
-              systemctl start docker
-              systemctl enable docker
-              
-              # Install AWS CLI
-              apt-get install -y awscli
-              
-              # Create directory for app
-              mkdir -p /app
-              
-              # Login to ECR
-              aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${aws_ecr_repository.app_repo.repository_url}
-              
-              # Pull and run Docker container
-              docker pull ${aws_ecr_repository.app_repo.repository_url}:latest
-              
-              # Run container
-              docker run -d \
-                --name myapp \
-                -p 80:80 \
-                -e AWS_REGION=${var.aws_region} \
-                -v /app:/data \
-                ${aws_ecr_repository.app_repo.repository_url}:latest
-              
-              # Optional: Download/Upload from/to S3
-              # aws s3 cp s3://${aws_s3_bucket.app_storage.bucket}/app-config.json /app/config.json
-              # aws s3 sync /app/logs s3://${aws_s3_bucket.app_storage.bucket}/logs/
-              
-              # Health check endpoint
-              echo "Health check endpoint created" > /var/www/html/health
-              EOF
-}
-
 
