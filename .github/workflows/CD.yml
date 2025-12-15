@@ -1,4 +1,4 @@
-name: CD - Deploy Application
+name: CD - Deploy Application via Bastion
 
 on:
   workflow_dispatch:
@@ -12,22 +12,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup SSH
+      - name: Setup SSH keys
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      - name: Disable host key checking
+      - name: Configure SSH for Bastion ProxyJump
         run: |
-          echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+          echo -e "Host bastion\n\tHostName ${{ secrets.BASTION_IP }}\n\tUser ubuntu\n\tIdentityFile ~/.ssh/id_rsa\n\nHost private-ec2\n\tHostName ${{ secrets.PRIVATE_EC2_IP }}\n\tUser ubuntu\n\tProxyJump bastion\n\tIdentityFile ~/.ssh/id_rsa\n\tStrictHostKeyChecking no" >> ~/.ssh/config
 
-      - name: Install Ansible Docker collection
+      - name: Install Ansible and Docker collection
         run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
           ansible-galaxy collection install community.docker
 
       - name: Deploy with Ansible
         run: |
           ansible-playbook -i ansible/hosts.ini ansible/deploy.yml \
             --extra-vars "image_tag=${{ github.sha }}"
-
