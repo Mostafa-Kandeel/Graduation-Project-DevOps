@@ -12,39 +12,71 @@
     container_port: 80
 
   tasks:
-    - name: Install required packages
+    - name: Update apt cache
       apt:
-        name:
-          - docker.io
-          - awscli
-        state: present
         update_cache: yes
+        cache_valid_time: 3600
+
+    # Install Docker WITHOUT specific version to avoid conflicts
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Install AWS CLI
+      apt:
+        name: awscli
+        state: present
 
     - name: Start Docker service
-      service:
+      systemd:
         name: docker
         state: started
         enabled: true
 
+    # IMPORTANT: Replaced docker_login with shell command that runs on remote EC2
     - name: Login to Amazon ECR using IAM Role
-      community.docker.docker_login:
-        registry_url: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com"
-        username: AWS
-        password: "{{ lookup('pipe', 'aws ecr get-login-password --region ' + aws_region) }}"
+      shell: |
+        aws ecr get-login-password --region {{ aws_region }} | \
+        docker login --username AWS --password-stdin {{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com
+      register: ecr_login_result
+      changed_when: "'Login Succeeded' in ecr_login_result.stdout"
+      # no_log: true  # Uncomment to hide credentials from logs
 
-    - name: Pull latest Docker image
-      community.docker.docker_image:
+    - name: Debug - Show ECR login result
+      debug:
+        msg: "ECR Login: {{ ecr_login_result.stdout }}"
+      when: ecr_login_result.failed
+
+    - name: Pull Docker image from ECR
+      docker_image:
         name: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{ ecr_repo }}"
         tag: "{{ image_tag }}"
         source: pull
+        force_source: yes
 
-    - name: Run / Update Docker container
-      community.docker.docker_container:
+    - name: Stop and remove old container if exists
+      docker_container:
+        name: "{{ container_name }}"
+        state: absent
+        force_kill: yes
+      ignore_errors: yes
+
+    - name: Run new Docker container
+      docker_container:
         name: "{{ container_name }}"
         image: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{ ecr_repo }}:{{ image_tag }}"
         state: started
         restart_policy: always
-        recreate: true
         ports:
           - "80:{{ container_port }}"
 
+    - name: Verify container is running
+      command: docker ps --filter "name={{ container_name }}" --format "table {{.Names}}\t{{.Status}}"
+      register: container_status
+
+    - name: Show deployment status
+      debug:
+        msg: |
+          Container status:
+          {{ container_status.stdout_lines | join('\n') }}
