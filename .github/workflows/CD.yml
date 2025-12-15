@@ -1,34 +1,47 @@
-name: CD - Deploy Application via Bastion
+name: Simple Deploy via Bastion
 
 on:
   workflow_dispatch:
 
 jobs:
   deploy:
-    name: Deploy Application with Ansible
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup SSH keys
+      
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-
-      - name: Configure SSH for Bastion ProxyJump
+          ssh-keyscan ${{ secrets.BASTION_IP }} >> ~/.ssh/known_hosts
+      
+      - name: Install Ansible
+        run: sudo apt-get update && sudo apt-get install -y ansible
+      
+      - name: Create ansible.cfg مع bastion settings
         run: |
-          echo -e "Host bastion\n\tHostName ${{ secrets.BASTION_IP }}\n\tUser ubuntu\n\tIdentityFile ~/.ssh/id_rsa\n\nHost private-ec2\n\tHostName ${{ secrets.PRIVATE_EC2_IP }}\n\tUser ubuntu\n\tProxyJump bastion\n\tIdentityFile ~/.ssh/id_rsa\n\tStrictHostKeyChecking no" >> ~/.ssh/config
-
-      - name: Install Ansible and Docker collection
+          cat > ansible/ansible.cfg << EOF
+          [defaults]
+          inventory = hosts.ini
+          host_key_checking = False
+          remote_user = ubuntu
+          private_key_file = ~/.ssh/id_rsa
+          timeout = 30
+          
+          [ssh_connection]
+          ssh_args = -o StrictHostKeyChecking=no -o ProxyJump=ubuntu@${{ secrets.BASTION_IP }}
+          EOF
+      
+      - name: Run deployment
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ansible
-          ansible-galaxy collection install community.docker
-
-      - name: Deploy with Ansible
-        run: |
-          ansible-playbook -i ansible/hosts.ini ansible/deploy.yml \
-            --extra-vars "image_tag=${{ github.sha }}"
+          cd ansible
+          ansible-playbook deploy.yml \
+            -e "aws_region=$AWS_REGION" \
+            -e "aws_account_id=$AWS_ACCOUNT_ID" \
+            -e "image_tag=latest"
