@@ -35,13 +35,13 @@ jobs:
           ssh_args = -o StrictHostKeyChecking=no -o ProxyJump=ubuntu@${{ secrets.BASTION_IP }}
           EOF
       
-      - name: Run deployment
+      - name: Run Ansible playbook
         env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+            AWS_REGION: ${{ secrets.AWS_REGION }}
+            AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
         run: |
           cd ansible
-          ansible-playbook deploy.yml \
-            -e "aws_region=$AWS_REGION" \
-            -e "aws_account_id=$AWS_ACCOUNT_ID" \
-            -e "image_tag=latest"
+          ansible-playbook -i hosts.ini deploy.yml \
+          -e "aws_region=$AWS_REGION" \
+          -e "aws_account_id=$AWS_ACCOUNT_ID" \
+          -e "image_tag=latest"
