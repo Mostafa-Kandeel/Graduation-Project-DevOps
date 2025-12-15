@@ -1,125 +1,50 @@
 ---
 - name: Deploy Application on EC2
-  hosts: all
-  become: yes
+  hosts: web
+  become: true
+
   vars:
     aws_region: "{{ aws_region | default('us-east-1') }}"
     aws_account_id: "{{ aws_account_id }}"
-    image_name: "my-app"
+    ecr_repo: my-app-repo
     image_tag: "{{ image_tag | default('latest') }}"
-    container_name: "my-app-container"
+    container_name: my-app-container
     container_port: 80
 
   tasks:
-    - name: Check if Docker is installed
-      command: docker --version
-      register: docker_check
-      ignore_errors: yes
-      changed_when: false
-
-    - name: Update apt packages
+    - name: Install required packages
       apt:
+        name:
+          - docker.io
+          - awscli
+        state: present
         update_cache: yes
-        cache_valid_time: 3600
-      when: docker_check.failed
-
-    - name: Install Docker dependencies
-      apt:
-        name:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - software-properties-common
-        state: present
-      when: docker_check.failed
-
-    - name: Add Docker GPG key
-      apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
-      when: docker_check.failed
-
-    - name: Add Docker repository
-      apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-        state: present
-      when: docker_check.failed
-
-    - name: Install Docker
-      apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-        state: present
-      when: docker_check.failed
 
     - name: Start Docker service
-      systemd:
+      service:
         name: docker
         state: started
-        enabled: yes
-      when: docker_check.failed
+        enabled: true
 
-    - name: Add ubuntu user to docker group
-      user:
-        name: ubuntu
-        groups: docker
-        append: yes
-      when: docker_check.failed
+    - name: Login to Amazon ECR using IAM Role
+      community.docker.docker_login:
+        registry_url: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com"
+        username: AWS
+        password: "{{ lookup('pipe', 'aws ecr get-login-password --region ' + aws_region) }}"
 
-    # 2. Install AWS CLI if needed
-    - name: Check if AWS CLI is installed
-      command: aws --version
-      register: aws_check
-      ignore_errors: yes
+    - name: Pull latest Docker image
+      community.docker.docker_image:
+        name: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{ ecr_repo }}"
+        tag: "{{ image_tag }}"
+        source: pull
 
-    - name: Install AWS CLI
-      apt:
-        name: awscli
-        state: present
-      when: aws_check.failed
+    - name: Run / Update Docker container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{ ecr_repo }}:{{ image_tag }}"
+        state: started
+        restart_policy: always
+        recreate: true
+        ports:
+          - "80:{{ container_port }}"
 
-    # 3. Login to ECR
-    - name: Login to AWS ECR
-      shell: |
-        aws ecr get-login-password --region {{ aws_region }} | \
-        docker login --username AWS --password-stdin {{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com
-      environment:
-        AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
-        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
-      register: login_result
-      changed_when: "'Login Succeeded' in login_result.stdout"
-
-    # 4. Pull image from ECR
-    - name: Pull Docker image
-      shell: docker pull {{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{ image_name }}:{{ image_tag }}
-      register: pull_result
-      changed_when: "'Downloaded newer image' in pull_result.stdout or 'Status: Downloaded' in pull_result.stdout"
-
-    # 5. Stop old container if exists
-    - name: Stop old container
-      shell: docker stop {{ container_name }} || true
-      ignore_errors: yes
-
-    - name: Remove old container
-      shell: docker rm {{ container_name }} || true
-      ignore_errors: yes
-
-    # 6. Run new container
-    - name: Run Docker container
-      shell: |
-        docker run -d \
-          --name {{ container_name }} \
-          -p 80:{{ container_port }} \
-          --restart always \
-          {{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{ image_name }}:{{ image_tag }}
-
-    # 7. Verify container is running
-    - name: Check container status
-      shell: docker ps --filter "name={{ container_name }}" --format "table {{.Names}}\t{{.Status}}"
-      register: container_status
-
-    - name: Show container status
-      debug:
-        msg: "Container status: {{ container_status.stdout }}"
