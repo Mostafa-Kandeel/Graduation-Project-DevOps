@@ -16,20 +16,47 @@
       apt:
         update_cache: yes
         cache_valid_time: 3600
-
-    - name: Install Docker using official script
+    - name: Install Docker using official script (recommended)
       shell: |
+        # تثبيت Docker بدون استخدام apt repository
         curl -fsSL https://get.docker.com -o get-docker.sh
-        sh get-docker.sh
-        rm get-docker.sh
+        sudo sh get-docker.sh
+        rm -f get-docker.sh
       args:
         creates: /usr/bin/docker
+
+    - name: Start and enable Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    # ===== الخطوة 3: الآن يمكن تثبيت AWS CLI =====
+    - name: Update apt cache (fresh)
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
     - name: Install AWS CLI
       apt:
         name: awscli
         state: present
+        update_cache: yes
 
+    # ===== الخطوة 4: باقي المهام =====
+    - name: Test Docker and AWS CLI
+      shell: |
+        echo "Docker: $(docker --version)"
+        echo "AWS CLI: $(aws --version 2>/dev/null || echo 'Not installed')"
+      register: versions
+      changed_when: false
+      
     - name: Start Docker service
       systemd:
         name: docker
