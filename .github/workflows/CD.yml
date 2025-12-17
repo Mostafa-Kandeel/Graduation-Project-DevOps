@@ -1,4 +1,4 @@
-name: Simple Deploy via Bastion
+name: Deploy To Server
 
 on:
   workflow_dispatch:
