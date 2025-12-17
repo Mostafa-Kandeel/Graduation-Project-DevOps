@@ -22,6 +22,7 @@
       apt:
         name: docker.io
         state: present
+        update_cache: yes
 
     - name: Install AWS CLI
       apt:
@@ -69,7 +70,7 @@
         state: started
         restart_policy: always
         ports:
-          - "80:{{ container_port }}"
+          - "8080:{{ container_port }}"
 
     - name: Verify container is running
       command: docker ps --filter "name={{ container_name }}" --format "table {{.Names}}\t{{.Status}}"
