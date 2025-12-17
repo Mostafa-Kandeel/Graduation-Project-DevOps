@@ -9,7 +9,7 @@
     ecr_repo: my-app-repo
     image_tag: "{{ image_tag | default('latest') }}"
     container_name: my-app-container
-    container_port: 80
+    container_port: 90
 
   tasks:
     - name: Update apt cache
