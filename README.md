@@ -62,8 +62,8 @@ We empower ambitious technical and operational professionals to build impactful 
 
 ---
 ## 🖥️ Technology Stack
-This project demonstrates a complete CI/CD pipeline for deploying a modern React application on AWS using Terraform, Docker, Ansible, and GitHub Actions.
----
+### This project demonstrates a complete CI/CD pipeline for deploying a modern React application on AWS using Terraform, Docker, Ansible, and GitHub Actions.
+
 Frontend
   ```bash
     ⚛ React 18.3.1 – Frontend framework
@@ -84,8 +84,8 @@ Version Control & CI/CD
     🧾 Git & GitHub – Source control
     🤖 GitHub Actions – CI/CD automation
   ```
-### 🗺️ System Design
-- Link : https://app.eraser.io/workspace/AVft6U7QdEAplbkHWcrI?origin=share
+## 🗺️ System Design
+#### Link : https://app.eraser.io/workspace/AVft6U7QdEAplbkHWcrI?origin=share
 ---
 ![System Design Screenshot](https://github.com/Mostafa-Kandeel/Graduation-Project-DevOps/blob/main/Frondend/images/diagram-export-12-19-2025-1_09_32-AM.png)
 ---
