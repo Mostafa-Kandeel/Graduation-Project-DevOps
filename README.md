@@ -87,7 +87,7 @@ Version Control & CI/CD
 ### 🗺️ System Design
 - Link : https://app.eraser.io/workspace/AVft6U7QdEAplbkHWcrI?origin=share
 ---
-![System Design Screenshot](https://github.com/Mostafa-Kandeel/Graduation-Project-DevOps/blob/main/Frondend/images/diagram-export-12-18-2025-6_55_31-PM.png)
+![System Design Screenshot](https://github.com/Mostafa-Kandeel/Graduation-Project-DevOps/blob/main/Frondend/images/diagram-export-12-19-2025-1_09_32-AM.png)
 ---
 ## 📦 Installation & Setup
 
