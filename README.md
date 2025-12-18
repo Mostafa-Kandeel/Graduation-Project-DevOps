@@ -66,24 +66,28 @@ This project demonstrates a complete CI/CD pipeline for deploying a modern React
 ---
 Frontend
   ```bash
-          ⚛ React 18.3.1 – Frontend framework
-          ⚡ Vite – Fast build tool
-          🎨 Tailwind CSS – Utility-first CSS framework
-          🛣 React Router – Client-side routing
+    ⚛ React 18.3.1 – Frontend framework
+    ⚡ Vite – Fast build tool
+    🎨 Tailwind CSS – Utility-first CSS framework
+    🛣 React Router – Client-side routing
   ```
 Infrastructure & DevOps
   ```bash
-          ☁️ Amazon Web Services (AWS) – Cloud provider
-          🏗 Terraform – Infrastructure as Code (IaC)
-          🐳 Docker – Containerization
-          ⚙️ Ansible – Configuration management
-          🌐 Nginx – Reverse proxy & web server
+    ☁️ Amazon Web Services (AWS) – Cloud provider
+    🏗 Terraform – Infrastructure as Code (IaC)
+    🐳 Docker – Containerization
+    ⚙️ Ansible – Configuration management
+    🌐 Nginx – Reverse proxy & web server
    ```
 Version Control & CI/CD
   ```bash
-          🧾 Git & GitHub – Source control
-          🤖 GitHub Actions – CI/CD automation
+    🧾 Git & GitHub – Source control
+    🤖 GitHub Actions – CI/CD automation
   ```
+### 🗺️ System Design
+- Link : https://app.eraser.io/workspace/AVft6U7QdEAplbkHWcrI?origin=share
+---
+![System Design Screenshot](https://github.com/Mostafa-Kandeel/Graduation-Project-DevOps/blob/main/Frondend/images/diagram-export-12-18-2025-6_55_31-PM.png)
 ---
 ## 📦 Installation & Setup
 
@@ -108,8 +112,4 @@ GitHub
 
 Terraform → AWS (Create Infra: EC2, ECR)
 ```
-## System Design
-Link : https://app.eraser.io/workspace/AVft6U7QdEAplbkHWcrI?origin=share
-![System Design Screenshot]()
-
 
