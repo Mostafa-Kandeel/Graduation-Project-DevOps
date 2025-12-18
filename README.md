@@ -1,15 +1,14 @@
 # LanWave IT Consulting Website
 
 A modern and responsive web application for **LanWave IT Consulting – Egypt**, showcasing the company’s IT services, expertise, and contact information.  
-This website is built as a **Single Page Application (SPA)** using React, offering smooth navigation and a clean professional UI.
 
-🔗 **Live Preview:** https://lanwave-it-consultin-ogy3.bolt.host/
+🔗 **Live Preview:** http://35.170.118.197/
 ![LanWave Website Screenshot](https://github.com/Mostafa-Kandeel/Graduation-Project-DevOps/blob/main/Frondend/images/home-page.png)
 
 ---
 
 ## 🏢 About LanWave
-**Founded in 2010, LanWave has been at the forefront of delivering cutting-edge IT solutions to businesses across the region. What started as a small team of passionate technologists has grown into a leading provider of comprehensive IT services.
+**Founded in 2025, LanWave has been at the forefront of delivering cutting-edge IT solutions to businesses across the region. What started as a small team of passionate technologists has grown into a leading provider of comprehensive IT services.
 
 We have successfully partnered with over 500 organizations, helping them navigate the complexities of modern technology. Our commitment to excellence and innovation has earned us a reputation as a trusted advisor in the IT industry.
 
@@ -63,16 +62,29 @@ We empower ambitious technical and operational professionals to build impactful 
 
 ---
 ## 🖥️ Technology Stack
-
-- ⚛ **React 18.3.1** – Frontend Framework  
-- ⚡ **Vite** – Fast Build Tool  
-- 🎨 **Tailwind CSS** – Styling  
-- 🛣 **React Router** – Routing  
-- ☁️ **Bolt.host** – Deployment  
-
-
+This project demonstrates a complete CI/CD pipeline for deploying a modern React application on AWS using Terraform, Docker, Ansible, and GitHub Actions.
 ---
-
+Frontend
+  ```bash
+          ⚛ React 18.3.1 – Frontend framework
+          ⚡ Vite – Fast build tool
+          🎨 Tailwind CSS – Utility-first CSS framework
+          🛣 React Router – Client-side routing
+  ```
+Infrastructure & DevOps
+  ```bash
+          ☁️ Amazon Web Services (AWS) – Cloud provider
+          🏗 Terraform – Infrastructure as Code (IaC)
+          🐳 Docker – Containerization
+          ⚙️ Ansible – Configuration management
+          🌐 Nginx – Reverse proxy & web server
+   ```
+Version Control & CI/CD
+  ```bash
+          🧾 Git & GitHub – Source control
+          🤖 GitHub Actions – CI/CD automation
+  ```
+---
 ## 📦 Installation & Setup
 
 Clone the repository:
@@ -81,79 +93,23 @@ Clone the repository:
 git clone git@github.com:Mostafa-Kandeel/Graduation-Project-DevOps.git
 cd Graduation-Project-DevOps
 ```
-## Docker Deployment
-
-This project can be containerized and deployed using Docker. Below are the commands to build, run, and manage the Docker container.
-
-### Prerequisites
-- Docker installed on your system
-- Docker daemon running
-
-### Build Docker Image
-
-Build the Docker image with the tag `lanwave:v1`:
-
 ```bash
-docker build -t lanwave:v1 .
+Developer → Frontend → Git → GitHub
+
+GitHub
+ ├─ CI (GitHub Actions)
+ │    └─ Docker Build
+ │    └─ Push Image → ECR
+ │
+ └─ CD (GitHub Actions)
+      └─ Ansible
+      └─ Deploy → EC2
+            └─ Run App Container
+
+Terraform → AWS (Create Infra: EC2, ECR)
 ```
+## System Design
+Link : https://app.eraser.io/workspace/AVft6U7QdEAplbkHWcrI?origin=share
 
-### Run Docker Container
 
-Run the container in detached mode, mapping port 8080 on the host to port 80 in the container:
 
-```bash
-docker run -d --name lan-web -p 8080:80 lanwave:v1
-```
-
-The website will be accessible at `http://localhost:8080`
-
-### Access Container Shell
-
-To access the container's shell for debugging or inspection:
-
-```bash
-docker exec -it lan-web sh
-```
-
-### Stop Container
-
-Stop the running container:
-
-```bash
-docker container stop lan-web
-```
-
-### Remove Container
-
-Remove the stopped container:
-
-```bash
-docker container rm lan-web
-```
-
-### Remove Docker Image
-
-Remove the Docker image:
-
-```bash
-docker rmi lanwave:v1
-```
-
-### Complete Cleanup and Rebuild
-
-To completely clean up and rebuild from scratch:
-
-```bash
-# Stop and remove container
-docker container stop lan-web
-docker container rm lan-web
-
-# Remove image
-docker rmi lanwave:v1
-
-# Rebuild image
-docker build -t lanwave:v1 .
-
-# Run new container
-docker run -d --name lan-web -p 8080:80 lanwave:v1
-```
