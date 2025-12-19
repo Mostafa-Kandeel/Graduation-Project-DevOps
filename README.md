@@ -89,6 +89,12 @@ Version Control & CI/CD
 ---
 ![System Design Screenshot](https://github.com/Mostafa-Kandeel/Graduation-Project-DevOps/blob/main/Frondend/images/diagram-export-12-19-2025-1_09_32-AM.png)
 ---
+## 🏗️ System Design (Terraform)
+This project defines the infrastructure architecture as code using Terraform, following best practices for scalability, security, and maintainability.
+The system is designed to provision and manage cloud resources in a reproducible and automated way, ensuring consistent environments across development and production.
+#### Link : https://app.eraser.io/workspace/mxABPo7hbmg6wjllAu8p?origin=share
+![System Terraform Screenshot](https://github.com/Mostafa-Kandeel/Graduation-Project-DevOps/blob/main/terraform/diagram-export-12-19-2025-2_12_13-AM.png)
+
 ## 📦 Installation & Setup
 
 Clone the repository:
