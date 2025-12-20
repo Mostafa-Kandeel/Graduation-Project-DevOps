@@ -103,19 +103,4 @@ Clone the repository:
 git clone git@github.com:Mostafa-Kandeel/Graduation-Project-DevOps.git
 cd Graduation-Project-DevOps
 ```
-```bash
-Developer → Frontend → Git → GitHub
-
-GitHub
- ├─ CI (GitHub Actions)
- │    └─ Docker Build
- │    └─ Push Image → ECR
- │
- └─ CD (GitHub Actions)
-      └─ Ansible
-      └─ Deploy → EC2
-            └─ Run App Container
-
-Terraform → AWS (Create Infra: EC2, ECR)
-```
 
