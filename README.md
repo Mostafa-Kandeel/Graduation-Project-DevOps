@@ -104,3 +104,93 @@ git clone git@github.com:Mostafa-Kandeel/Graduation-Project-DevOps.git
 cd Graduation-Project-DevOps
 ```
 
+## Project Structure:
+
+```bash
+      .
+      ├── terraform/
+      ├── ansible/
+      ├── docker/
+      ├── .github/workflows/
+      └── app/
+```
+## 🏗️ Infrastructure Provisioning (Terraform)
+This will create:
+```bash
+      VPC & networking
+      EC2 instances
+      Security Groups
+      Iam Role and Policy
+      Elastic Ip
+      ECR repository
+```
+Initialize Terraform:
+```bash
+      cd terraform
+      terraform init
+```
+
+Review the plan:
+```bash
+      terraform plan
+```
+
+Apply infrastructure:
+```bash
+      terraform apply
+```
+
+## 🐳 Build & Push Docker Image (CI)
+
+### On every push to GitHub:
+
+- GitHub Actions (CI) builds the Docker image
+- Image is pushed to Amazon ECR
+
+Manual test:
+```bash
+      docker build -t my-app .
+      docker tag my-app:latest <aws_account_id>.dkr.ecr.<region>.amazonaws.com/my-app:latest
+      docker push <ecr_repo_url>
+```
+## 🚀 Deployment (CD with Ansible)
+
+CD pipeline triggers Ansible
+Install Nginx , Ansible 
+Ansible:
+- Pulls the image from ECR
+- Runs the container on EC2
+
+Manual run:
+```bash
+ansible-playbook -i inventory deploy.yml
+```
+🔁 Overview
+Developer → GitHub
+          → CI (Docker build & push)
+          → Terraform (infra)
+          → CD (Ansible)
+          → EC2 → App running
+
+🔐 Environment Variables
+
+Configure required secrets in GitHub Secrets:
+```bash
+    AWS_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY
+    AWS_REGION
+    ECR_REPOSITORY
+```
+✅ Verification
+
+Check EC2 instance
+
+Verify running container:
+```bash
+docker ps
+```
+Access the application via public IP / Load Balancer
+## 🧩 Notes
+- Infrastructure is fully managed by Terraform
+- Deployment is automated using Ansible
+- CI/CD is handled by GitHub Actions
